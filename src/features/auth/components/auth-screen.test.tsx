@@ -13,7 +13,7 @@ describe("AuthScreen", () => {
   afterEach(() => { vi.unstubAllGlobals(); });
 
   it("submits login through the credentialed API adapter without storing a token", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse(401, { message: "Authentication is required." })).mockResolvedValueOnce(jsonResponse(200, { data: { user } }));
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse(401, { message: "Authentication is required." })).mockResolvedValueOnce(jsonResponse(200, { data: { user } })).mockResolvedValueOnce(jsonResponse(200, { message: "Products retrieved successfully.", data: { items: [], total: 0, page: 1, pageSize: 10 } }));
     const interaction = userEvent.setup(); renderScreen();
     await interaction.type(await screen.findByLabelText("Email address"), user.email);
     await interaction.type(screen.getByLabelText("Password"), "correct-password");
@@ -54,7 +54,7 @@ describe("AuthScreen", () => {
   });
 
   it("returns to an unauthenticated screen after logout", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse(200, { data: user })).mockResolvedValueOnce(new Response(null, { status: 204 }));
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse(200, { data: user })).mockResolvedValueOnce(jsonResponse(200, { message: "Products retrieved successfully.", data: { items: [], total: 0, page: 1, pageSize: 10 } })).mockResolvedValueOnce(new Response(null, { status: 204 }));
     const interaction = userEvent.setup(); renderScreen();
     await interaction.click(await screen.findByRole("button", { name: "Sign out" }));
     expect(await screen.findByRole("heading", { name: "Sign in" })).toBeVisible();

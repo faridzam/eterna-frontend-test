@@ -23,7 +23,7 @@ npm run build
 npm run start
 ```
 
-Frontend tests mock `fetch` at the centralized API adapter boundary. They never make live API requests and verify credential inclusion, form validation, pending submit handling, and logout UI behavior.
+The authenticated workspace includes product create, edit, search, pagination, and soft-delete flows. Frontend tests mock `fetch` at the centralized API adapter boundary and validate product response schemas.
 
 ## AI Usage
 
