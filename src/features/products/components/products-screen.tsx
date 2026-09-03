@@ -357,8 +357,7 @@ export function ProductsScreen() {
     if (!window.confirm(`Delete ${product.name}?`)) return;
     setDeleting(product.id);
     try {
-      await productsApi.remove(product.id);
-      setNotice("Product deleted successfully.");
+      setNotice(await productsApi.remove(product.id));
       if (items.length === 1 && page > 1) {
         setLoading(true);
         setPage((current) => current - 1);
@@ -480,6 +479,11 @@ export function ProductsScreen() {
                 <h3>{product.name}</h3>
                 {product.description === null ? null : (
                   <p className="product-description">{product.description}</p>
+                )}
+                {product.owner === undefined ? null : (
+                  <p className="product-owner">
+                    Owner: {product.owner.name} ({product.owner.email})
+                  </p>
                 )}
               </div>
               <div className="product-metrics">

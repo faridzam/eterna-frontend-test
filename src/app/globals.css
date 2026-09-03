@@ -149,6 +149,16 @@ input:focus-visible {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+.auth-register-prompt {
+  color: var(--ink-muted);
+  font-size: 14px;
+  margin: 18px 0 0;
+  text-align: center;
+}
+.auth-register-prompt .text-button {
+  display: inline-block;
+  margin-top: 0;
+}
 .dashboard {
   margin: 0 auto;
   max-width: 960px;

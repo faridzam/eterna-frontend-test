@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { FormEvent } from "react";
 import { useState } from "react";
 import { z } from "zod";
@@ -80,11 +81,13 @@ export function AuthForm({
   mode,
   onModeChange,
   onRegistered,
+  registrationHref,
 }: Readonly<{
   initialSuccessMessage?: string;
   mode: AuthFormMode;
   onModeChange?: (mode: AuthFormMode) => void;
   onRegistered?: () => void;
+  registrationHref?: string;
 }>) {
   const auth = useAuth();
   const [values, setValues] = useState<FormValues>({
@@ -191,6 +194,14 @@ export function AuthForm({
       <button className="primary-button" disabled={pending} type="submit">
         {pending ? "Please wait" : isRegistering ? "Create account" : "Sign in"}
       </button>
+      {registrationHref === undefined ? null : (
+        <p className="auth-register-prompt">
+          Need an account? {" "}
+          <Link className="text-button" href={registrationHref}>
+            Register
+          </Link>
+        </p>
+      )}
       {onModeChange === undefined ? null : (
         <button
           className="text-button"

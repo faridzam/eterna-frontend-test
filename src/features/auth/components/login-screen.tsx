@@ -14,6 +14,7 @@ export function LoginScreen() {
             : undefined
         }
         mode="login"
+        registrationHref="/register"
       />
     </main>
   );

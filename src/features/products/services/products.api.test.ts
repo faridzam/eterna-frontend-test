@@ -47,4 +47,18 @@ describe("productsApi", () => {
       "unexpected response",
     );
   });
+  it("returns the backend delete message from its success envelope", async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          message: "Product deleted successfully.",
+          data: null,
+        }),
+        { status: 200 },
+      ),
+    );
+    await expect(productsApi.remove("product-1")).resolves.toBe(
+      "Product deleted successfully.",
+    );
+  });
 });

@@ -1,10 +1,10 @@
 import { ApiError } from "@/src/lib/api-client";
 import {
-  act,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
+    act,
+    fireEvent,
+    render,
+    screen,
+    waitFor,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -15,8 +15,12 @@ const mocks = vi.hoisted(() => ({
   create: vi.fn(),
   update: vi.fn(),
   remove: vi.fn(),
+  authRole: "ADMIN" as "ADMIN" | "STAFF",
 }));
 vi.mock("../services/products.api", () => ({ productsApi: mocks }));
+vi.mock("../../auth/components/auth-provider", () => ({
+  useOptionalAuth: () => ({ user: { role: mocks.authRole } }),
+}));
 const product = {
   id: "product-1",
   userId: "user-1",
@@ -28,6 +32,7 @@ const product = {
   createdAt: "2026-01-01T00:00:00.000Z",
   updatedAt: "2026-01-01T00:00:00.000Z",
   deletedAt: null,
+  owner: { id: "user-1", name: "Ada Admin", email: "admin@example.com" },
 };
 const result = (items = [product], total = items.length) => ({
   items,
@@ -41,10 +46,11 @@ describe("ProductsScreen", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.authRole = "ADMIN";
     mocks.list.mockReset().mockResolvedValue(result());
     mocks.create.mockReset().mockResolvedValue(product);
     mocks.update.mockReset().mockResolvedValue(product);
-    mocks.remove.mockReset().mockResolvedValue(undefined);
+    mocks.remove.mockReset().mockResolvedValue("Product deleted successfully.");
   });
 
   it("debounces live search and trims the keyword sent to the API", async () => {
@@ -154,5 +160,29 @@ describe("ProductsScreen", () => {
       "We could not load products.",
     );
     expect(screen.getByRole("button", { name: "Retry" })).toBeVisible();
+  });
+  it("shows owners and lets admins delete products from any owner", async () => {
+    const staffProduct = { ...product, id: "product-2", userId: "user-2", owner: {
+      id: "user-2", name: "Staff User", email: "staff@example.com",
+    } };
+    mocks.list.mockResolvedValue(result([product, staffProduct], 2));
+    const interaction = userEvent.setup();
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    render(<ProductsScreen />);
+    expect(await screen.findByText("Owner: Ada Admin (admin@example.com)")).toBeVisible();
+    expect(screen.getByText("Owner: Staff User (staff@example.com)")).toBeVisible();
+    const deleteButtons = screen.getAllByRole("button", { name: "Delete" });
+    expect(deleteButtons).toHaveLength(2);
+    await interaction.click(deleteButtons[0] ?? deleteButtons[1]);
+    await waitFor(() => expect(mocks.remove).toHaveBeenCalledWith("product-1"));
+    const staffDeleteButton = deleteButtons[1] ?? deleteButtons[0];
+    await interaction.click(staffDeleteButton);
+    await waitFor(() => expect(mocks.remove).toHaveBeenCalledWith("product-2"));
+  });
+  it("does not show delete controls to staff", async () => {
+    mocks.authRole = "STAFF";
+    render(<ProductsScreen />);
+    await screen.findByText("Packing tape");
+    expect(screen.queryByRole("button", { name: "Delete" })).not.toBeInTheDocument();
   });
 });

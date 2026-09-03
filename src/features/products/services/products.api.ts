@@ -12,6 +12,13 @@ const productSchema = z.object({
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
   deletedAt: z.string().datetime().nullable(),
+  owner: z
+    .object({
+      id: z.string().min(1),
+      name: z.string().min(1),
+      email: z.string().email(),
+    })
+    .optional(),
 });
 const pageEnvelope = z.object({
   message: z.string().min(1),
@@ -77,11 +84,13 @@ export const productsApi = {
       )
     ).data;
   },
-  async remove(id: string): Promise<void> {
-    await apiRequest(
-      `/products/${encodeURIComponent(id)}`,
-      { method: "DELETE" },
-      deleteEnvelope,
-    );
+  async remove(id: string): Promise<string> {
+    return (
+      await apiRequest(
+        `/products/${encodeURIComponent(id)}`,
+        { method: "DELETE" },
+        deleteEnvelope,
+      )
+    ).message;
   },
 };
