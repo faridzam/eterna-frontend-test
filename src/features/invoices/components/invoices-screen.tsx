@@ -674,7 +674,13 @@ export function InvoicesScreen() {
         }
       })
       .catch((requestError: unknown) => {
-        if (active) setProductsError(messageFrom(requestError));
+        if (!active) return;
+        if (requestError instanceof ApiError && requestError.status === 404) {
+          setProducts([]);
+          setProductsError(null);
+          return;
+        }
+        setProductsError(messageFrom(requestError));
       })
       .finally(() => {
         if (active) setProductsLoading(false);
@@ -756,7 +762,11 @@ export function InvoicesScreen() {
     setPendingStatus(true);
     setError(null);
     try {
-      const result = await invoicesApi.changeStatus(selected.id, nextStatus);
+      const result = await invoicesApi.changeStatus(
+        selected.id,
+        nextStatus,
+        selected.version,
+      );
       setNotice(result.message);
       setSelected(result.invoice);
       refresh();
@@ -869,7 +879,7 @@ export function InvoicesScreen() {
       ) : invoices.length === 0 ? (
         <div className="products-empty">
           <p className="section-label">Nothing here yet</p>
-          <h3>No invoices match this filter.</h3>
+          <h3>No invoices have been created yet.</h3>
         </div>
       ) : (
         <div className="invoice-list" aria-live="polite">

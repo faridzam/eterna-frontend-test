@@ -138,7 +138,22 @@ describe("InvoicesScreen", () => {
 
     render(<InvoicesScreen />);
 
-    expect(await screen.findByText("No invoices match this filter.")).toBeVisible();
+    expect(
+      await screen.findByText("No invoices have been created yet."),
+    ).toBeVisible();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("does not show an error when no products exist", async () => {
+    mocks.products.mockRejectedValueOnce(
+      new ApiError("No products found.", 404),
+    );
+    mocks.list.mockRejectedValueOnce(new ApiError("No invoices found.", 404));
+
+    render(<InvoicesScreen />);
+
+    expect(await screen.findByText("No invoices have been created yet.")).toBeVisible();
+    expect(screen.queryByText("No products found.")).not.toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
@@ -158,5 +173,52 @@ describe("InvoicesScreen", () => {
     expect(screen.getAllByText("$3.50").length).toBeGreaterThan(0);
     expect(screen.getByText("$0.39")).toBeVisible();
     expect(screen.getAllByText("$3.89").length).toBeGreaterThan(0);
+  });
+
+  it("uses the returned invoice version for the next status action", async () => {
+    const user = userEvent.setup();
+    const issuedInvoice = { ...invoice, status: "ISSUED" as const, version: 2 };
+    const cancelledInvoice = {
+      ...issuedInvoice,
+      status: "CANCELLED" as const,
+      version: 3,
+    };
+    mocks.changeStatus
+      .mockResolvedValueOnce({
+        message: "Invoice issued successfully.",
+        invoice: issuedInvoice,
+      })
+      .mockResolvedValueOnce({
+        message: "Invoice cancelled successfully.",
+        invoice: cancelledInvoice,
+      });
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    render(<InvoicesScreen />);
+    await user.click(await screen.findByRole("button", { name: /INV-2026-0001/ }));
+    await user.click(
+      await screen.findByRole("button", { name: "Issue invoice" }),
+    );
+    await waitFor(() =>
+      expect(mocks.changeStatus).toHaveBeenCalledWith(
+        invoice.id,
+        "ISSUED",
+        invoice.version,
+      ),
+    );
+
+    await user.click(screen.getByRole("button", { name: "Cancel invoice" }));
+    await waitFor(() =>
+      expect(mocks.changeStatus).toHaveBeenLastCalledWith(
+        invoice.id,
+        "CANCELLED",
+        issuedInvoice.version,
+      ),
+    );
+    expect(
+      within(screen.getByRole("dialog", { name: "INV-2026-0001" })).getByText(
+        "CANCELLED",
+      ),
+    ).toBeVisible();
   });
 });

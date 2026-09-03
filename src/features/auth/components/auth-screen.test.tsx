@@ -74,7 +74,7 @@ describe("AuthScreen", () => {
     await interaction.click(screen.getByRole("button", { name: "Sign in" }));
     await screen.findByRole("heading", { name: "Welcome back, Ada Lovelace" });
     expect(vi.mocked(fetch)).toHaveBeenCalledWith(
-      "http://localhost:3000/auth/login",
+      "http://localhost:8000/auth/login",
       expect.objectContaining({ credentials: "include", method: "POST" }),
     );
     expect(window.localStorage.length).toBe(0);

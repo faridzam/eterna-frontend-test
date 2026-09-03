@@ -18,7 +18,7 @@ describe("apiRequest", () => {
       apiRequest("/test", { method: "GET" }, z.object({ data: z.string() })),
     ).resolves.toEqual({ data: "ok" });
     expect(vi.mocked(fetch)).toHaveBeenCalledWith(
-      "http://localhost:3000/test",
+      "http://localhost:8000/test",
       expect.objectContaining({ credentials: "include" }),
     );
   });

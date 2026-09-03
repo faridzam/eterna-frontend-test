@@ -325,6 +325,12 @@ export function ProductsScreen() {
       } catch (requestError: unknown) {
         if (currentRequest !== requestId.current || controller.signal.aborted)
           return;
+        if (requestError instanceof ApiError && requestError.status === 404) {
+          setItems([]);
+          setTotal(0);
+          setError(null);
+          return;
+        }
         setError(messageFrom(requestError));
       } finally {
         if (currentRequest === requestId.current) setLoading(false);

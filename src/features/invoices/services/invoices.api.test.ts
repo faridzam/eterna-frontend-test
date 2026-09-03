@@ -54,10 +54,10 @@ describe("invoicesApi", () => {
       id: "invoice-1",
     });
     expect(vi.mocked(fetch).mock.calls[0]?.[0]).toBe(
-      "http://localhost:3000/invoices?page=2&pageSize=10&status=DRAFT",
+      "http://localhost:8000/invoices?page=2&pageSize=10&status=DRAFT",
     );
     expect(vi.mocked(fetch).mock.calls[1]?.[0]).toBe(
-      "http://localhost:3000/invoices/invoice%2Fa",
+      "http://localhost:8000/invoices/invoice%2Fa",
     );
   });
   it("rejects malformed success responses and normalizes API errors", async () => {

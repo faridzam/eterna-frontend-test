@@ -1,95 +1,68 @@
 # StockFlow Web
 
-Next.js App Router client for StockFlow's cookie-backed session API.
+## Setup and run
 
-## Local development
+Start the backend first by following `eterna-backend-test/README.md`. Then, from a fresh machine with Node.js 24+ and npm:
 
 ```bash
+cd eterna-frontend-test
 npm install
 cp .env.example .env.local
 npm run dev
 ```
 
-Open `http://localhost:3000`. Set `NEXT_PUBLIC_API_BASE_URL` to the exact backend origin. The backend must configure this frontend origin in both `FRONTEND_ORIGIN` and `CORS_ORIGINS`.
+Set `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000` in `.env.local`, and ensure the backend allows `http://localhost:3000` through `FRONTEND_ORIGIN` and `CORS_ORIGINS`. Open `http://localhost:3000`.
 
-The browser never reads or persists the session cookie. Every API request includes `credentials: "include"`; login receives a `HttpOnly`, `SameSite=Lax` cookie from the backend. In production, serve both applications over HTTPS so the backend can mark the cookie `Secure`.
-
-## Commands
+For a production Docker image, provide the public API URL when building because Next.js embeds it in the browser bundle:
 
 ```bash
-npm run lint
-npm run test
-npm run build
-npm run start
+docker build --build-arg NEXT_PUBLIC_API_BASE_URL=https://api.example.com -t stockflow-web .
 ```
 
-The authenticated workspace includes product create, edit, search, pagination, and soft-delete flows. Frontend tests mock `fetch` at the centralized API adapter boundary and validate product response schemas.
-
-## Cypress end-to-end tests
-
-Cypress requires the frontend, backend, and PostgreSQL services to be running.
-From `eterna-backend-test`, start PostgreSQL and apply the migrations (the
-Compose setup also starts the API):
+Useful checks:
 
 ```bash
-docker compose up --build
-docker compose run --rm migrate npm run db:seed
-```
-
-In another terminal, start the frontend from `eterna-frontend-test`:
-
-```bash
-npm install
-cp .env.example .env.local
-npm run dev
-```
-
-The frontend `.env.local` must set `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000`.
-The backend must allow `http://localhost:3000` through both `FRONTEND_ORIGIN`
-and `CORS_ORIGINS`. Run Cypress headlessly or open its interactive runner with:
-
-```bash
-npm run test:e2e
-npm run test:e2e:open
-```
-
-The suite registers unique users and creates uniquely named products for
-mutating scenarios, so it does not depend on seeded stock. Sessions use the
-real HttpOnly cookie flow and are cached with `cy.session`. Test-created data
-is isolated by user and run-specific names; the current API has no user-delete
-endpoint, so those records remain in the local test database. Stock assertions
-use authenticated `cy.request` calls because the list UI does not expose the
-exact persisted quantity.
-
-## Continuous integration and merge protection
-
-The repository workflow at `.github/workflows/ci.yml` runs `frontend-ci` on
-every branch push and on pull requests targeting `main`. It uses Node.js 24 and
-runs the frontend checks:
-
-```bash
-npm ci
 npm run lint
 npm test
 npm run build
+npm run test:e2e
 ```
 
-CI sets `NEXT_PUBLIC_API_BASE_URL` to `http://localhost:8000` and uses no
-secrets, so pull requests from forks can run. The workflow does not contain
-production credentials or committed `.env` files.
+Cypress needs the backend, database, and frontend running. Use `npm run test:e2e:open` for the interactive runner.
 
-GitHub Actions reports the `frontend-ci` result; it does not prevent merging by
-itself. To enforce it, open **Settings -> Rules -> Rulesets** (or **Settings ->
-Branches**), create a rule for the `main` branch, require pull requests before
-merging, require status checks to pass before merging, select `frontend-ci`, and
-optionally require the branch to be up to date. Save the rule. In the backend
-repository, apply the same settings and select `backend-ci`. Because these are
-separate repositories, each repository protects its own CI check.
+## Demo login credentials
 
-## Routes
+- Admin: `admin@stockflow.com` / `stockflow`
+- Staff: `staff@stockflow.com` / `stockflow`
 
-The App Router lives exclusively in `src/app`. Public routes are grouped under `(public)` and authenticated routes under `(authenticated)`, so the URLs remain `/login`, `/register`, `/`, `/products`, `/invoices`, and `/invoices/[id]`. The authenticated layout verifies the cookie-backed session before rendering protected content.
+## Tech choices and why
+
+- Next.js App Router provides routing, layouts, loading states, and a production build system.
+- React 19 supports the interactive authenticated workspace with a small client surface.
+- TypeScript keeps UI models and API adapter contracts explicit.
+- Zod validates API responses at the browser boundary before data reaches components.
+- A centralized `fetch` adapter keeps credentials, error handling, and response parsing consistent.
+- HttpOnly cookie sessions avoid storing bearer tokens in browser JavaScript.
+- Vitest and Testing Library provide fast component and adapter tests without a live API.
+- Cypress covers the real browser cookie flow and the main product and invoice workflows.
+
+## Trade-offs and known limitations
+
+- The frontend depends on a separately running backend.
+- API state is intentionally lightweight; there is no dedicated query cache or optimistic update layer.
+- Cypress creates test data but cannot remove users because the API has no user-delete endpoint.
+- Accessibility coverage is focused on the implemented flows rather than a complete automated audit.
+- There is no production deployment configuration, analytics, error monitoring, or visual regression suite.
+- The UI exposes practical inventory and invoice workflows, but not a full reporting or administration console.
+
+## What I would do with one more week
+
+- Add richer invoice editing, reporting, filtering, and export workflows.
+- Improve keyboard navigation, screen-reader semantics, and automated accessibility checks.
+- Add query caching, better loading/error recovery, and more granular mutation feedback.
+- Add visual regression tests and broaden Cypress coverage across roles and edge cases.
+- Add deployment configuration, runtime configuration validation, and production monitoring.
 
 ## AI Usage
 
-GitHub Copilot assisted with implementation, tests, and documentation.
+GitHub Copilot assisted with implementation, test creation, debugging, and documentation. I reviewed and ran the resulting code and tests. Approximately 8 hours total using AI.

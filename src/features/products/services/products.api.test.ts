@@ -31,7 +31,7 @@ describe("productsApi", () => {
       productsApi.list({ page: 1, pageSize: 10, search: "SF-100" }),
     ).resolves.toMatchObject({ items: [product] });
     expect(vi.mocked(fetch).mock.calls[0]?.[0]).toBe(
-      "http://localhost:3000/products?page=1&pageSize=10&search=SF-100",
+      "http://localhost:8000/products?page=1&pageSize=10&search=SF-100",
     );
   });
   it("rejects malformed success responses", async () => {

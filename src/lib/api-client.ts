@@ -15,9 +15,11 @@ export const unauthorizedEvent = "stockflow:unauthorized";
 const errorSchema = z.object({
   message: z.union([z.string(), z.array(z.string())]).optional(),
 });
+const configuredApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 const apiBaseUrl = (
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3000"
-).replace(/\/$/, "");
+  configuredApiBaseUrl ??
+  (process.env.NODE_ENV === "production" ? undefined : "http://localhost:8000")
+)?.replace(/\/$/, "");
 
 function errorMessages(payload: unknown): string[] {
   const parsed = errorSchema.safeParse(payload);
@@ -34,6 +36,11 @@ export async function apiRequest<T>(
   options: RequestInit,
   schema: z.ZodType<T>,
 ): Promise<T> {
+  if (apiBaseUrl === undefined) {
+    throw new ApiError(
+      "StockFlow API is not configured. Set NEXT_PUBLIC_API_BASE_URL before building the application.",
+    );
+  }
   let response: Response;
   try {
     response = await fetch(`${apiBaseUrl}${path}`, {

@@ -161,6 +161,16 @@ describe("ProductsScreen", () => {
     );
     expect(screen.getByRole("button", { name: "Retry" })).toBeVisible();
   });
+  it("renders the empty state when the API reports no products", async () => {
+    mocks.list.mockRejectedValueOnce(new ApiError("No products found.", 404));
+
+    render(<ProductsScreen />);
+
+    expect(
+      await screen.findByText("No products have been created yet."),
+    ).toBeVisible();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
   it("shows owners and lets admins delete products from any owner", async () => {
     const staffProduct = { ...product, id: "product-2", userId: "user-2", owner: {
       id: "user-2", name: "Staff User", email: "staff@example.com",

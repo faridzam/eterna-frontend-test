@@ -78,7 +78,10 @@ describe("invoices", () => {
     cy.once("window:confirm", () => true);
     cy.intercept("PATCH", "http://localhost:8000/invoices/*/status").as("cancelInvoice");
     cy.get("@invoiceDetail").contains("button", "Cancel invoice").click();
-    cy.wait("@cancelInvoice").its("response.statusCode").should("eq", 200);
+    cy.wait("@cancelInvoice").then(({ request, response }) => {
+      expect(request.headers["if-match"]).to.eq("2");
+      expect(response?.statusCode).to.eq(200);
+    });
     cy.get("@invoiceDetail").within(() => {
       cy.contains("Status").parent().should("contain", "CANCELLED");
       cy.contains("button", "Issue invoice").should("not.exist");
@@ -102,5 +105,34 @@ describe("invoices", () => {
     cy.get('[role="dialog"] [role="alert"]')
       .should("be.visible")
       .and("contain", productName);
+  });
+
+  it("marks an issued invoice as paid using its updated version", () => {
+    cy.visit("/invoices");
+    cy.contains("button", "Create invoice").click();
+    cy.get('[role="dialog"]').within(() => {
+      cy.get("#invoice-customer").type(`${customerName} Paid`);
+      cy.get("#invoice-product-0").select(productId);
+      cy.get("#invoice-quantity-0").clear().type("1");
+      cy.contains("button", "Create invoice").click();
+    });
+
+    cy.contains("button", `${customerName} Paid`).click();
+    cy.get('[role="dialog"]').as("paidInvoiceDetail").within(() => {
+      cy.once("window:confirm", () => true);
+      cy.intercept("PATCH", "http://localhost:8000/invoices/*/status").as("issuePaidInvoice");
+      cy.contains("button", "Issue invoice").click();
+    });
+    cy.wait("@issuePaidInvoice").its("response.statusCode").should("eq", 200);
+    cy.get("@paidInvoiceDetail").within(() => {
+      cy.once("window:confirm", () => true);
+      cy.intercept("PATCH", "http://localhost:8000/invoices/*/status").as("markInvoicePaid");
+      cy.contains("button", "Mark paid").click();
+    });
+    cy.wait("@markInvoicePaid").then(({ request, response }) => {
+      expect(request.headers["if-match"]).to.eq("2");
+      expect(response?.statusCode).to.eq(200);
+    });
+    cy.get("@paidInvoiceDetail").contains("Status").parent().should("contain", "PAID");
   });
 });
