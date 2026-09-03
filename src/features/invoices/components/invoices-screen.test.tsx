@@ -43,6 +43,7 @@ const invoice = {
   issueDate: "2026-09-03T00:00:00.000Z",
   dueDate: null,
   status: "DRAFT" as const,
+  version: 1,
   notes: null,
   subtotalCents: 350,
   taxAmountCents: 39,
@@ -110,6 +111,19 @@ describe("InvoicesScreen", () => {
       await screen.findByRole("dialog", { name: "INV-2026-0001" }),
     ).toBeVisible();
     expect(screen.getByRole("button", { name: "Issue invoice" })).toBeVisible();
+    await userEvent.setup().click(screen.getByRole("button", { name: "Edit" }));
+    expect(
+      screen.getByRole("dialog", { name: "Edit invoice" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("dialog", { name: "INV-2026-0001" }),
+    ).toBeVisible();
+    await userEvent
+      .setup()
+      .click(screen.getByRole("button", { name: "Close invoice form" }));
+    expect(
+      screen.queryByRole("dialog", { name: "Edit invoice" }),
+    ).not.toBeInTheDocument();
     await userEvent
       .setup()
       .click(screen.getByRole("button", { name: "Close invoice detail" }));

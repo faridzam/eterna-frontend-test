@@ -28,7 +28,8 @@ input {
   font: inherit;
 }
 button:focus-visible,
-input:focus-visible {
+input:focus-visible,
+textarea:focus-visible {
   outline: 3px solid #215d58;
   outline-offset: 2px;
 }
@@ -89,13 +90,18 @@ input:focus-visible {
   font-size: 14px;
   font-weight: 600;
 }
-.field input {
+.field input,
+.field textarea {
   background: #fff;
   border: 1px solid #aeb8ad;
   border-radius: 4px;
   min-height: 44px;
   padding: 9px 11px;
   width: 100%;
+}
+.field textarea {
+  min-height: 96px;
+  resize: vertical;
 }
 .field input[aria-invalid="true"] {
   border-color: #b83724;
@@ -479,6 +485,9 @@ textarea:focus-visible {
   padding: 20px;
   position: fixed;
   z-index: 10;
+}
+.invoice-form-backdrop {
+  z-index: 20;
 }
 .product-form {
   background: var(--panel);

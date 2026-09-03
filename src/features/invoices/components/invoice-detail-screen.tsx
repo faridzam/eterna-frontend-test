@@ -4,9 +4,9 @@ import { ApiError } from "@/src/lib/api-client";
 import { useCallback, useEffect, useState } from "react";
 import { z } from "zod";
 import {
-  invoicesApi,
-  type Invoice,
-  type InvoiceStatus,
+    invoicesApi,
+    type Invoice,
+    type InvoiceStatus,
 } from "../services/invoices.api";
 
 const idSchema = z
@@ -61,7 +61,11 @@ export function InvoiceDetailScreen({ id }: Readonly<{ id: string }>) {
     setPending(true);
     setError(null);
     try {
-      setInvoice((await invoicesApi.changeStatus(invoice.id, status)).invoice);
+      setInvoice(
+        (
+          await invoicesApi.changeStatus(invoice.id, status, invoice.version)
+        ).invoice,
+      );
     } catch (requestError: unknown) {
       setError(messageFrom(requestError));
     } finally {

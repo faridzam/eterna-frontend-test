@@ -25,6 +25,31 @@ npm run start
 
 The authenticated workspace includes product create, edit, search, pagination, and soft-delete flows. Frontend tests mock `fetch` at the centralized API adapter boundary and validate product response schemas.
 
+## Continuous integration and merge protection
+
+The repository workflow at `.github/workflows/ci.yml` runs `frontend-ci` on
+every branch push and on pull requests targeting `main`. It uses Node.js 24 and
+runs the frontend checks:
+
+```bash
+npm ci
+npm run lint
+npm test
+npm run build
+```
+
+CI sets `NEXT_PUBLIC_API_BASE_URL` to `http://localhost:8000` and uses no
+secrets, so pull requests from forks can run. The workflow does not contain
+production credentials or committed `.env` files.
+
+GitHub Actions reports the `frontend-ci` result; it does not prevent merging by
+itself. To enforce it, open **Settings -> Rules -> Rulesets** (or **Settings ->
+Branches**), create a rule for the `main` branch, require pull requests before
+merging, require status checks to pass before merging, select `frontend-ci`, and
+optionally require the branch to be up to date. Save the rule. In the backend
+repository, apply the same settings and select `backend-ci`. Because these are
+separate repositories, each repository protects its own CI check.
+
 ## Routes
 
 The App Router lives exclusively in `src/app`. Public routes are grouped under `(public)` and authenticated routes under `(authenticated)`, so the URLs remain `/login`, `/register`, `/`, `/products`, `/invoices`, and `/invoices/[id]`. The authenticated layout verifies the cookie-backed session before rendering protected content.

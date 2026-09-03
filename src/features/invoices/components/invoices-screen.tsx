@@ -206,7 +206,7 @@ function InvoiceForm({
       const result =
         editing === null
           ? await invoicesApi.create(payload)
-          : await invoicesApi.updateDraft(editing.id, payload);
+          : await invoicesApi.updateDraft(editing.id, payload, editing.version);
       await onSaved(result.message);
     } catch (error: unknown) {
       setRequestError(messageFrom(error));
@@ -218,7 +218,7 @@ function InvoiceForm({
     <div
       aria-labelledby="invoice-form-title"
       aria-modal="true"
-      className="modal-backdrop"
+      className="modal-backdrop invoice-form-backdrop"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onCancel();
       }}

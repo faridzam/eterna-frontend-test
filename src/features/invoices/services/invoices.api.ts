@@ -22,6 +22,7 @@ const invoiceSchema = z
     issueDate: z.string().min(1),
     dueDate: z.string().nullable(),
     status: invoiceStatusSchema,
+    version: z.number().int().positive(),
     notes: z.string().nullable(),
     subtotalCents: z.number().int().nonnegative(),
     taxAmountCents: z.number().int().nonnegative(),
@@ -108,10 +109,19 @@ export const invoicesApi = {
   async updateDraft(
     id: string,
     payload: InvoiceInput,
+    version = 1,
+    idempotencyKey = crypto.randomUUID(),
   ): Promise<{ readonly message: string; readonly invoice: Invoice }> {
     const response = await apiRequest(
       `/invoices/${encodeURIComponent(id)}`,
-      { method: "PATCH", body: JSON.stringify(payload) },
+      {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+        headers: {
+          "If-Match": String(version),
+          "Idempotency-Key": idempotencyKey,
+        },
+      },
       invoiceEnvelope,
     );
     return { message: response.message, invoice: response.data };
@@ -119,10 +129,19 @@ export const invoicesApi = {
   async changeStatus(
     id: string,
     status: Exclude<InvoiceStatus, "DRAFT">,
+    version = 1,
+    idempotencyKey = crypto.randomUUID(),
   ): Promise<{ readonly message: string; readonly invoice: Invoice }> {
     const response = await apiRequest(
       `/invoices/${encodeURIComponent(id)}/status`,
-      { method: "PATCH", body: JSON.stringify({ status }) },
+      {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+        headers: {
+          "If-Match": String(version),
+          "Idempotency-Key": idempotencyKey,
+        },
+      },
       invoiceEnvelope,
     );
     return { message: response.message, invoice: response.data };

@@ -19,6 +19,7 @@ const invoice = {
   issueDate: "2026-09-03T00:00:00.000Z",
   dueDate: null,
   status: "DRAFT",
+  version: 1,
   notes: null,
   subtotalCents: 700,
   taxAmountCents: 77,
