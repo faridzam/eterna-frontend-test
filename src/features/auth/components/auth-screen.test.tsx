@@ -37,7 +37,12 @@ describe("AuthScreen", () => {
       .mockResolvedValueOnce(
         jsonResponse(401, { message: "Authentication is required." }),
       )
-      .mockResolvedValueOnce(jsonResponse(200, { data: { user } }))
+      .mockResolvedValueOnce(
+        jsonResponse(200, {
+          message: "Signed in successfully.",
+          data: { user },
+        }),
+      )
       .mockResolvedValueOnce(
         jsonResponse(200, {
           message: "Products retrieved successfully.",
@@ -142,7 +147,12 @@ describe("AuthScreen", () => {
 
   it("returns to an unauthenticated screen after logout", async () => {
     vi.mocked(fetch)
-      .mockResolvedValueOnce(jsonResponse(200, { data: user }))
+      .mockResolvedValueOnce(
+        jsonResponse(200, {
+          message: "Authenticated user retrieved successfully.",
+          data: user,
+        }),
+      )
       .mockResolvedValueOnce(
         jsonResponse(200, {
           message: "Products retrieved successfully.",
@@ -161,7 +171,9 @@ describe("AuthScreen", () => {
           data: { items: [], total: 0, page: 1, pageSize: 10 },
         }),
       )
-      .mockResolvedValueOnce(new Response(null, { status: 204 }));
+      .mockResolvedValueOnce(
+        jsonResponse(200, { message: "Signed out successfully.", data: null }),
+      );
     const interaction = userEvent.setup();
     renderScreen();
     await interaction.click(

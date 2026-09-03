@@ -1,13 +1,13 @@
 "use client";
 
-import { ApiError } from "@/src/lib/api-client";
+import { ApiError, unauthorizedEvent } from "@/src/lib/api-client";
 import { createContext, useContext, useEffect, useState } from "react";
 import {
-  authApi,
-  type AuthenticatedUser,
-  type LoginPayload,
-  type RegisterPayload,
-  type RegisterResult,
+    authApi,
+    type AuthenticatedUser,
+    type LoginPayload,
+    type RegisterPayload,
+    type RegisterResult,
 } from "../services/auth.api";
 import { safeErrorMessage } from "./form-errors";
 
@@ -56,8 +56,18 @@ export function AuthProvider({
     };
   }, []);
 
+  useEffect(() => {
+    function handleUnauthorized(): void {
+      setUser(null);
+      setError(null);
+      setStatus("unauthenticated");
+    }
+    window.addEventListener(unauthorizedEvent, handleUnauthorized);
+    return () => window.removeEventListener(unauthorizedEvent, handleUnauthorized);
+  }, []);
+
   async function login(payload: LoginPayload): Promise<void> {
-    setUser(await authApi.login(payload));
+    setUser((await authApi.login(payload)).data.user);
     setError(null);
     setStatus("authenticated");
   }
@@ -67,11 +77,14 @@ export function AuthProvider({
   async function logout(): Promise<void> {
     try {
       await authApi.logout();
-    } finally {
+    } catch (requestError: unknown) {
       setUser(null);
-      setError(null);
       setStatus("unauthenticated");
+      throw requestError;
     }
+    setUser(null);
+    setError(null);
+    setStatus("unauthenticated");
   }
   async function refresh(): Promise<void> {
     setStatus("loading");
@@ -105,4 +118,8 @@ export function useAuth(): AuthContextValue {
     throw new Error("useAuth must be used inside AuthProvider.");
   }
   return context;
+}
+
+export function useOptionalAuth(): AuthContextValue | null {
+  return useContext(AuthContext);
 }

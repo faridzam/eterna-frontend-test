@@ -2,17 +2,18 @@
 
 import { ApiError } from "@/src/lib/api-client";
 import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type FormEvent,
+    useCallback,
+    useEffect,
+    useRef,
+    useState,
+    type FormEvent,
 } from "react";
 import { z } from "zod";
+import { useOptionalAuth } from "../../auth/components/auth-provider";
 import {
-  productsApi,
-  type Product,
-  type ProductInput,
+    productsApi,
+    type Product,
+    type ProductInput,
 } from "../services/products.api";
 
 const pageSize = 10;
@@ -284,6 +285,7 @@ function ProductForm({
 }
 
 export function ProductsScreen() {
+  const auth = useOptionalAuth();
   const [items, setItems] = useState<readonly Product[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -495,14 +497,14 @@ export function ProductsScreen() {
                 >
                   Edit
                 </button>
-                <button
+                {auth?.user?.role === "ADMIN" ? <button
                   className="danger-button"
                   disabled={deleting === product.id}
                   onClick={() => void remove(product)}
                   type="button"
                 >
                   {deleting === product.id ? "Deleting" : "Delete"}
-                </button>
+                </button> : null}
               </div>
             </article>
           ))}

@@ -10,6 +10,8 @@ export class ApiError extends Error {
   }
 }
 
+export const unauthorizedEvent = "stockflow:unauthorized";
+
 const errorSchema = z.object({
   message: z.union([z.string(), z.array(z.string())]).optional(),
 });
@@ -49,6 +51,9 @@ export async function apiRequest<T>(
     response.status === 204 ? null : await response.json().catch(() => null);
   if (!response.ok) {
     const messages = errorMessages(payload);
+    if (response.status === 401 && typeof window !== "undefined") {
+      window.dispatchEvent(new Event(unauthorizedEvent));
+    }
     throw new ApiError(messages.join(" "), response.status, messages);
   }
   const parsed = schema.safeParse(payload);

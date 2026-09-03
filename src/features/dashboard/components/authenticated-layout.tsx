@@ -12,6 +12,7 @@ export function AuthenticatedLayout({
   const pathname = usePathname();
   const router = useRouter();
   const [pending, setPending] = useState(false);
+  const [signOutError, setSignOutError] = useState<string | null>(null);
   useEffect(() => {
     if (auth.status === "unauthenticated") router.replace("/login");
   }, [auth.status, router]);
@@ -38,9 +39,18 @@ export function AuthenticatedLayout({
   async function signOut(): Promise<void> {
     if (pending) return;
     setPending(true);
+    setSignOutError(null);
     try {
       await auth.logout();
-    } catch {}
+    } catch (error: unknown) {
+      setSignOutError(
+        error instanceof Error
+          ? error.message
+          : "Sign out could not be completed. Please try again.",
+      );
+    } finally {
+      setPending(false);
+    }
   }
   return (
     <main className="dashboard">
@@ -55,6 +65,11 @@ export function AuthenticatedLayout({
           {pending ? "Signing out" : "Sign out"}
         </button>
       </header>
+      {signOutError === null ? null : (
+        <p className="form-error" role="alert">
+          {signOutError}
+        </p>
+      )}
       <nav aria-label="Workspace navigation" className="workspace-nav">
         <Link href="/">Overview</Link>
         <Link href="/products">Products</Link>

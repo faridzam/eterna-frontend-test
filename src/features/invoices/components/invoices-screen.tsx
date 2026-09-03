@@ -4,14 +4,14 @@ import { ApiError } from "@/src/lib/api-client";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { z } from "zod";
 import {
-  productsApi,
-  type Product,
+    productsApi,
+    type Product,
 } from "../../products/services/products.api";
 import {
-  invoicesApi,
-  type Invoice,
-  type InvoiceInput,
-  type InvoiceStatus,
+    invoicesApi,
+    type Invoice,
+    type InvoiceInput,
+    type InvoiceStatus,
 } from "../services/invoices.api";
 
 const pageSize = 10;
@@ -591,6 +591,14 @@ function InvoiceDetail({
           </div>
         </dl>
         <div className="form-actions">
+          <button
+            aria-label="Print invoice"
+            className="secondary-button print-invoice-button"
+            onClick={() => window.print()}
+            type="button"
+          >
+            Print invoice
+          </button>
           {invoice.status === "DRAFT" ? (
             <>
               <button
@@ -635,11 +643,16 @@ export function InvoicesScreen() {
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState<InvoiceStatus | "ALL">("ALL");
   const [refreshToken, setRefreshToken] = useState(0);
+  const [productsRefreshToken, setProductsRefreshToken] = useState(0);
+  const [productsLoading, setProductsLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [productsError, setProductsError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Invoice | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
+  const [detailRefreshToken, setDetailRefreshToken] = useState(0);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Invoice | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -655,15 +668,21 @@ export function InvoicesScreen() {
     void productsApi
       .list({ page: 1, pageSize: 100 })
       .then((result) => {
-        if (active) setProducts(result.items);
+        if (active) {
+          setProducts(result.items);
+          setProductsError(null);
+        }
       })
       .catch((requestError: unknown) => {
         if (active) setProductsError(messageFrom(requestError));
+      })
+      .finally(() => {
+        if (active) setProductsLoading(false);
       });
     return () => {
       active = false;
     };
-  }, []);
+  }, [productsRefreshToken]);
   useEffect(() => {
     controllerRef.current?.abort();
     const controller = new AbortController();
@@ -707,10 +726,13 @@ export function InvoicesScreen() {
       .get(selectedId, controller.signal)
       .then(setSelected)
       .catch((requestError: unknown) => {
-        if (!controller.signal.aborted) setError(messageFrom(requestError));
+        if (!controller.signal.aborted) setDetailError(messageFrom(requestError));
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setDetailLoading(false);
       });
     return () => controller.abort();
-  }, [selectedId]);
+  }, [detailRefreshToken, selectedId]);
   function refresh(): void {
     setRefreshToken((current) => current + 1);
   }
@@ -757,7 +779,7 @@ export function InvoicesScreen() {
       </div>
       <button
         className="primary-button create-product-button"
-        disabled={productsError !== null}
+        disabled={productsError !== null || productsLoading}
         onClick={() => {
           setEditing(null);
           setFormOpen(true);
@@ -768,9 +790,21 @@ export function InvoicesScreen() {
         Create invoice
       </button>
       {productsError === null ? null : (
-        <p className="form-error" role="alert">
-          {productsError}
-        </p>
+        <div className="inline-error">
+          <p className="form-error" role="alert">
+            {productsError}
+          </p>
+          <button
+            className="secondary-button"
+            onClick={() => {
+              setProductsLoading(true);
+              setProductsRefreshToken((current) => current + 1);
+            }}
+            type="button"
+          >
+            Retry products
+          </button>
+        </div>
       )}
       {formOpen ? (
         <InvoiceForm
@@ -879,10 +913,28 @@ export function InvoicesScreen() {
           Next
         </button>
       </div>
-      {selected === null && selectedId !== null ? (
+      {selectedId !== null && detailLoading ? (
         <p aria-live="polite" className="list-status">
           Loading invoice detail...
         </p>
+      ) : selectedId !== null && detailError !== null ? (
+        <div className="inline-error">
+          <p role="alert">{detailError}</p>
+          <button
+            className="secondary-button"
+            onClick={() => setDetailRefreshToken((current) => current + 1)}
+            type="button"
+          >
+            Retry detail
+          </button>
+          <button
+            className="secondary-button"
+            onClick={() => setSelectedId(null)}
+            type="button"
+          >
+            Close
+          </button>
+        </div>
       ) : selected === null ? null : (
         <InvoiceDetail
           invoice={selected}

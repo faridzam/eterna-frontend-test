@@ -731,3 +731,29 @@ textarea:focus-visible {
     margin-top: 14px;
   }
 }
+
+@media print {
+  body {
+    background: white;
+  }
+  .dashboard-header,
+  .workspace-nav,
+  .invoices-section > *:not(.modal-backdrop),
+  .modal-close,
+  .form-actions,
+  .print-invoice-button {
+    display: none !important;
+  }
+  .modal-backdrop {
+    background: white;
+    display: block;
+    inset: 0;
+    position: absolute;
+  }
+  .invoice-detail {
+    border: 0;
+    box-shadow: none;
+    margin: 0;
+    max-width: none;
+  }
+}

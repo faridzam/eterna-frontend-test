@@ -16,6 +16,7 @@ describe("authApi", () => {
         id: "user-1",
         name: "Ada Lovelace",
         email: "ada@example.com",
+        role: "STAFF",
         createdAt: "2026-01-01T00:00:00.000Z",
       },
     };
