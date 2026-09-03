@@ -25,6 +25,42 @@ npm run start
 
 The authenticated workspace includes product create, edit, search, pagination, and soft-delete flows. Frontend tests mock `fetch` at the centralized API adapter boundary and validate product response schemas.
 
+## Cypress end-to-end tests
+
+Cypress requires the frontend, backend, and PostgreSQL services to be running.
+From `eterna-backend-test`, start PostgreSQL and apply the migrations (the
+Compose setup also starts the API):
+
+```bash
+docker compose up --build
+docker compose run --rm migrate npm run db:seed
+```
+
+In another terminal, start the frontend from `eterna-frontend-test`:
+
+```bash
+npm install
+cp .env.example .env.local
+npm run dev
+```
+
+The frontend `.env.local` must set `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000`.
+The backend must allow `http://localhost:3000` through both `FRONTEND_ORIGIN`
+and `CORS_ORIGINS`. Run Cypress headlessly or open its interactive runner with:
+
+```bash
+npm run test:e2e
+npm run test:e2e:open
+```
+
+The suite registers unique users and creates uniquely named products for
+mutating scenarios, so it does not depend on seeded stock. Sessions use the
+real HttpOnly cookie flow and are cached with `cy.session`. Test-created data
+is isolated by user and run-specific names; the current API has no user-delete
+endpoint, so those records remain in the local test database. Stock assertions
+use authenticated `cy.request` calls because the list UI does not expose the
+exact persisted quantity.
+
 ## Continuous integration and merge protection
 
 The repository workflow at `.github/workflows/ci.yml` runs `frontend-ci` on

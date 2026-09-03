@@ -1,3 +1,4 @@
+import { ApiError } from "@/src/lib/api-client";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -131,6 +132,16 @@ describe("InvoicesScreen", () => {
       screen.queryByRole("dialog", { name: "INV-2026-0001" }),
     ).not.toBeInTheDocument();
   });
+
+  it("renders an empty state when the API reports no invoices", async () => {
+    mocks.list.mockRejectedValueOnce(new ApiError("No invoices found.", 404));
+
+    render(<InvoicesScreen />);
+
+    expect(await screen.findByText("No invoices match this filter.")).toBeVisible();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
   it("validates the creation form and previews integer-cent totals", async () => {
     const user = userEvent.setup();
     render(<InvoicesScreen />);

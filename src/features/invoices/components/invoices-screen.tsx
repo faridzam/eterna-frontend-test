@@ -709,8 +709,14 @@ export function InvoicesScreen() {
         }
       })
       .catch((requestError: unknown) => {
-        if (current === requestId.current && !controller.signal.aborted)
-          setError(messageFrom(requestError));
+        if (current !== requestId.current || controller.signal.aborted) return;
+        if (requestError instanceof ApiError && requestError.status === 404) {
+          setInvoices([]);
+          setTotal(0);
+          setError(null);
+          return;
+        }
+        setError(messageFrom(requestError));
       })
       .finally(() => {
         if (current === requestId.current) setLoading(false);
