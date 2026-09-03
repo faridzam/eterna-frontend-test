@@ -3,6 +3,7 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
 import { z } from "zod";
+import { InvoicesScreen } from "../../invoices/components/invoices-screen";
 import { ProductsScreen } from "../../products/components/products-screen";
 import { useAuth } from "./auth-provider";
 import { safeErrorMessage } from "./form-errors";
@@ -93,6 +94,7 @@ function Dashboard() {
     <header className="dashboard-header"><p className="eyebrow">STOCKFLOW</p><button className="sign-out" disabled={pending} onClick={() => void signOut()} type="button">{pending ? "Signing out" : "Sign out"}</button></header>
     <section className="welcome" aria-labelledby="welcome-title"><p className="section-label">Workspace</p><h1 id="welcome-title">Welcome back, {auth.user?.name}</h1><p>Products and invoices will appear here as your workspace grows.</p></section>
     <ProductsScreen />
+    <InvoicesScreen />
   </main>;
 }
 
