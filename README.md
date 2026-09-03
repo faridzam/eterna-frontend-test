@@ -5,6 +5,7 @@
 Start the backend first by following `eterna-backend-test/README.md`. Then, from a fresh machine with Node.js 24+ and npm:
 
 ```bash
+git clone https://github.com/faridzam/eterna-frontend-test.git
 cd eterna-frontend-test
 npm install
 cp .env.example .env.local
