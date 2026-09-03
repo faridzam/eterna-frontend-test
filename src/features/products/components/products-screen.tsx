@@ -17,18 +17,32 @@ import {
 } from "../services/products.api";
 
 const pageSize = 10;
+const requiredInteger = (label: string, field: string) =>
+  z.preprocess(
+    (value) =>
+      value === "" || value === null || value === undefined
+        ? undefined
+        : typeof value === "string"
+          ? value.trim() === ""
+            ? value
+            : Number(value)
+          : value,
+    z
+      .number({ error: `${label} is required.` })
+      .int(`${label} must be a whole number.`)
+      .min(0, `${label} cannot be negative.`)
+      .max(100000000, `${label} is too large.`)
+      .refine((value) => Number.isInteger(value), {
+        message: `${label} must be a whole number.`,
+        path: [field],
+      }),
+  );
 const formSchema = z.object({
   sku: z.string().trim().min(1, "SKU is required.").max(100),
   name: z.string().trim().min(1, "Name is required.").max(200),
   description: z.string().max(2000),
-  unitPriceCents: z.coerce
-    .number()
-    .int("Price must be whole cents.")
-    .min(0, "Price cannot be negative."),
-  quantityOnHand: z.coerce
-    .number()
-    .int("Quantity must be a whole number.")
-    .min(0, "Quantity cannot be negative."),
+  unitPriceCents: requiredInteger("Price", "unitPriceCents"),
+  quantityOnHand: requiredInteger("Quantity", "quantityOnHand"),
 });
 type FormValues = {
   sku: string;

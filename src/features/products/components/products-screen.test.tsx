@@ -111,6 +111,63 @@ describe("ProductsScreen", () => {
     expect(screen.getByDisplayValue("SF-200")).toBeVisible();
   });
 
+  it("rejects missing numeric fields with field-level errors", async () => {
+    const interaction = userEvent.setup();
+    render(<ProductsScreen />);
+    await screen.findByText("Packing tape");
+    await interaction.click(
+      screen.getByRole("button", { name: "Create product" }),
+    );
+    await interaction.type(screen.getByLabelText("SKU"), "SF-200");
+    await interaction.type(screen.getByLabelText("Name"), "Shipping box");
+    await interaction.click(screen.getByRole("button", { name: "Add product" }));
+    expect(screen.getByText("Price is required.")).toBeVisible();
+    expect(screen.getByText("Quantity is required.")).toBeVisible();
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
+
+  it("accepts zero price and quantity and rejects negative or fractional values", async () => {
+    const interaction = userEvent.setup();
+    render(<ProductsScreen />);
+    await screen.findByText("Packing tape");
+    await interaction.click(
+      screen.getByRole("button", { name: "Create product" }),
+    );
+    await interaction.type(screen.getByLabelText("SKU"), "SF-200");
+    await interaction.type(screen.getByLabelText("Name"), "Shipping box");
+    await interaction.type(screen.getByLabelText("Price (cents)"), "-1.5");
+    await interaction.type(screen.getByLabelText("Quantity on hand"), "1.5");
+    await interaction.click(screen.getByRole("button", { name: "Add product" }));
+    expect(screen.getByText("Price must be a whole number.")).toBeVisible();
+    expect(screen.getByText("Quantity must be a whole number.")).toBeVisible();
+    expect(mocks.create).not.toHaveBeenCalled();
+
+    await interaction.clear(screen.getByLabelText("Price (cents)"));
+    await interaction.clear(screen.getByLabelText("Quantity on hand"));
+    await interaction.type(screen.getByLabelText("Price (cents)"), "0");
+    await interaction.type(screen.getByLabelText("Quantity on hand"), "0");
+    await interaction.click(screen.getByRole("button", { name: "Add product" }));
+    await waitFor(() => expect(mocks.create).toHaveBeenCalledWith(
+      expect.objectContaining({ unitPriceCents: 0, quantityOnHand: 0 }),
+    ));
+  });
+
+  it("accepts zero values when editing a product", async () => {
+    const interaction = userEvent.setup();
+    render(<ProductsScreen />);
+    await screen.findByText("Packing tape");
+    await interaction.click(screen.getByRole("button", { name: "Edit" }));
+    await interaction.clear(screen.getByLabelText("Price (cents)"));
+    await interaction.clear(screen.getByLabelText("Quantity on hand"));
+    await interaction.type(screen.getByLabelText("Price (cents)"), "0");
+    await interaction.type(screen.getByLabelText("Quantity on hand"), "0");
+    await interaction.click(screen.getByRole("button", { name: "Save changes" }));
+    await waitFor(() => expect(mocks.update).toHaveBeenCalledWith(
+      "product-1",
+      expect.objectContaining({ unitPriceCents: 0, quantityOnHand: 0 }),
+    ));
+  });
+
   it("closes and refreshes after successful creation", async () => {
     const created = {
       ...product,
@@ -148,14 +205,14 @@ describe("ProductsScreen", () => {
     render(<ProductsScreen />);
     await screen.findByText("Packing tape");
     await interaction.type(screen.getByLabelText("Search products"), "BOX-999");
-    await interaction.click(screen.getByRole("button", { name: "Search" }));
+    await interaction.keyboard("{Enter}");
     expect(
       await screen.findByText("No products match 'BOX-999'."),
     ).toBeVisible();
     mocks.list.mockRejectedValueOnce(
       new ApiError("We could not load products.", 500),
     );
-    await interaction.click(screen.getByRole("button", { name: "Search" }));
+    await interaction.keyboard("{Enter}");
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "We could not load products.",
     );
