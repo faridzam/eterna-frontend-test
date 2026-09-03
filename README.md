@@ -25,6 +25,10 @@ npm run start
 
 The authenticated workspace includes product create, edit, search, pagination, and soft-delete flows. Frontend tests mock `fetch` at the centralized API adapter boundary and validate product response schemas.
 
+## Routes
+
+The App Router lives exclusively in `src/app`. Public routes are grouped under `(public)` and authenticated routes under `(authenticated)`, so the URLs remain `/login`, `/register`, `/`, `/products`, `/invoices`, and `/invoices/[id]`. The authenticated layout verifies the cookie-backed session before rendering protected content.
+
 ## AI Usage
 
 GitHub Copilot assisted with implementation, tests, and documentation.

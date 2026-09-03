@@ -1,14 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { DashboardScreen } from "../../dashboard/components/dashboard-screen";
-import { AuthForm, type AuthFormMode } from "./auth-form";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { useAuth } from "./auth-provider";
 
-export function AuthScreen() {
+export function PublicAuthLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   const auth = useAuth();
-  const [mode, setMode] = useState<AuthFormMode>("login");
-  if (auth.status === "loading")
+  const router = useRouter();
+  useEffect(() => {
+    if (auth.status === "authenticated") router.replace("/");
+  }, [auth.status, router]);
+  if (auth.status === "loading" || auth.status === "authenticated")
     return (
       <main className="status-screen">
         <p aria-live="polite">Loading your workspace...</p>
@@ -27,10 +31,5 @@ export function AuthScreen() {
         </button>
       </main>
     );
-  if (auth.status === "authenticated") return <DashboardScreen />;
-  return (
-    <main className="auth-screen">
-      <AuthForm mode={mode} onModeChange={setMode} />
-    </main>
-  );
+  return <>{children}</>;
 }

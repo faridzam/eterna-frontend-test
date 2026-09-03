@@ -2,7 +2,13 @@
 
 import { ApiError } from "@/src/lib/api-client";
 import { createContext, useContext, useEffect, useState } from "react";
-import { authApi, type AuthenticatedUser, type LoginPayload, type RegisterPayload, type RegisterResult } from "../services/auth.api";
+import {
+  authApi,
+  type AuthenticatedUser,
+  type LoginPayload,
+  type RegisterPayload,
+  type RegisterResult,
+} from "../services/auth.api";
 import { safeErrorMessage } from "./form-errors";
 
 type SessionStatus = "loading" | "authenticated" | "unauthenticated" | "error";
@@ -17,13 +23,16 @@ interface AuthContextValue {
 }
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-export function AuthProvider({ children }: Readonly<{ children: React.ReactNode }>) {
+export function AuthProvider({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   const [status, setStatus] = useState<SessionStatus>("loading");
   const [user, setUser] = useState<AuthenticatedUser | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     let isCurrent = true;
-    void authApi.me()
+    void authApi
+      .me()
       .then((authenticatedUser) => {
         if (isCurrent) {
           setUser(authenticatedUser);
@@ -42,7 +51,9 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
           setError(safeErrorMessage(requestError));
         }
       });
-    return () => { isCurrent = false; };
+    return () => {
+      isCurrent = false;
+    };
   }, []);
 
   async function login(payload: LoginPayload): Promise<void> {
@@ -50,9 +61,17 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     setError(null);
     setStatus("authenticated");
   }
-  async function register(payload: RegisterPayload): Promise<RegisterResult> { return authApi.register(payload); }
+  async function register(payload: RegisterPayload): Promise<RegisterResult> {
+    return authApi.register(payload);
+  }
   async function logout(): Promise<void> {
-    try { await authApi.logout(); } finally { setUser(null); setError(null); setStatus("unauthenticated"); }
+    try {
+      await authApi.logout();
+    } finally {
+      setUser(null);
+      setError(null);
+      setStatus("unauthenticated");
+    }
   }
   async function refresh(): Promise<void> {
     setStatus("loading");
@@ -71,11 +90,19 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     }
   }
 
-  return <AuthContext value={{ error, login, logout, refresh, register, status, user }}>{children}</AuthContext>;
+  return (
+    <AuthContext
+      value={{ error, login, logout, refresh, register, status, user }}
+    >
+      {children}
+    </AuthContext>
+  );
 }
 
 export function useAuth(): AuthContextValue {
   const context = useContext(AuthContext);
-  if (context === null) { throw new Error("useAuth must be used inside AuthProvider."); }
+  if (context === null) {
+    throw new Error("useAuth must be used inside AuthProvider.");
+  }
   return context;
 }

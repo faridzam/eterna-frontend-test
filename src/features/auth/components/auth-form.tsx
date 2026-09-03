@@ -1,0 +1,211 @@
+"use client";
+
+import type { FormEvent } from "react";
+import { useState } from "react";
+import { z } from "zod";
+import { useAuth } from "./auth-provider";
+import { safeErrorMessage } from "./form-errors";
+
+const loginSchema = z.object({
+  email: z.string().trim().email("Enter a valid email address."),
+  password: z.string().min(8, "Password must be at least 8 characters."),
+});
+const registerSchema = loginSchema.extend({
+  name: z
+    .string()
+    .trim()
+    .min(2, "Name must be at least 2 characters.")
+    .max(100, "Name is too long."),
+});
+export type AuthFormMode = "login" | "register";
+type FormValues = { email: string; name: string; password: string };
+type FormErrors = Partial<Record<keyof FormValues, string>>;
+
+function validationErrors(error: z.ZodError): FormErrors {
+  const errors: FormErrors = {};
+  for (const issue of error.issues) {
+    const field = issue.path[0];
+    if (
+      typeof field === "string" &&
+      (field === "email" || field === "name" || field === "password") &&
+      errors[field] === undefined
+    )
+      errors[field] = issue.message;
+  }
+  return errors;
+}
+
+function Field({
+  autoComplete,
+  error,
+  label,
+  name,
+  onChange,
+  type = "text",
+  value,
+}: Readonly<{
+  autoComplete: string;
+  error?: string;
+  label: string;
+  name: keyof FormValues;
+  onChange: (name: keyof FormValues, value: string) => void;
+  type?: "email" | "password" | "text";
+  value: string;
+}>) {
+  const errorId = `${name}-error`;
+  return (
+    <div className="field">
+      <label htmlFor={name}>{label}</label>
+      <input
+        aria-describedby={error === undefined ? undefined : errorId}
+        aria-invalid={error === undefined ? undefined : true}
+        autoComplete={autoComplete}
+        id={name}
+        name={name}
+        onChange={(event) => onChange(name, event.target.value)}
+        type={type}
+        value={value}
+      />
+      {error === undefined ? null : (
+        <p className="field-error" id={errorId}>
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+export function AuthForm({
+  initialSuccessMessage,
+  mode,
+  onModeChange,
+  onRegistered,
+}: Readonly<{
+  initialSuccessMessage?: string;
+  mode: AuthFormMode;
+  onModeChange?: (mode: AuthFormMode) => void;
+  onRegistered?: () => void;
+}>) {
+  const auth = useAuth();
+  const [values, setValues] = useState<FormValues>({
+    email: "",
+    name: "",
+    password: "",
+  });
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [formError, setFormError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(
+    initialSuccessMessage ?? null,
+  );
+  const [pending, setPending] = useState(false);
+  const isRegistering = mode === "register";
+  function changeValue(name: keyof FormValues, value: string): void {
+    setValues((current) => ({ ...current, [name]: value }));
+    setErrors((current) => ({ ...current, [name]: undefined }));
+  }
+  async function submit(event: FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault();
+    if (pending) return;
+    setSuccessMessage(null);
+    const parsedLogin = loginSchema.safeParse(values);
+    if (!parsedLogin.success) {
+      setErrors(validationErrors(parsedLogin.error));
+      return;
+    }
+    const parsedRegistration = isRegistering
+      ? registerSchema.safeParse(values)
+      : null;
+    if (parsedRegistration !== null && !parsedRegistration.success) {
+      setErrors(validationErrors(parsedRegistration.error));
+      return;
+    }
+    setPending(true);
+    setFormError(null);
+    try {
+      if (parsedRegistration !== null && parsedRegistration.success) {
+        const result = await auth.register(parsedRegistration.data);
+        setSuccessMessage(result.message);
+        setValues((current) => ({ ...current, name: "", password: "" }));
+        onRegistered?.();
+        onModeChange?.("login");
+      } else await auth.login(parsedLogin.data);
+    } catch (requestError: unknown) {
+      setFormError(safeErrorMessage(requestError));
+    } finally {
+      setPending(false);
+    }
+  }
+  return (
+    <form
+      className="auth-form"
+      noValidate
+      onSubmit={(event) => void submit(event)}
+    >
+      <div className="form-heading">
+        <p className="eyebrow">STOCKFLOW</p>
+        <h1>{isRegistering ? "Create your account" : "Sign in"}</h1>
+        <p>
+          {isRegistering
+            ? "Start managing your inventory."
+            : "Use your work account to continue."}
+        </p>
+      </div>
+      {isRegistering ? (
+        <Field
+          autoComplete="name"
+          error={errors.name}
+          label="Name"
+          name="name"
+          onChange={changeValue}
+          value={values.name}
+        />
+      ) : null}
+      <Field
+        autoComplete="email"
+        error={errors.email}
+        label="Email address"
+        name="email"
+        onChange={changeValue}
+        type="email"
+        value={values.email}
+      />
+      <Field
+        autoComplete={isRegistering ? "new-password" : "current-password"}
+        error={errors.password}
+        label="Password"
+        name="password"
+        onChange={changeValue}
+        type="password"
+        value={values.password}
+      />
+      {successMessage === null ? null : (
+        <p aria-live="polite" className="form-success">
+          {successMessage}
+        </p>
+      )}
+      {formError === null ? null : (
+        <p aria-live="polite" className="form-error" role="alert">
+          {formError}
+        </p>
+      )}
+      <button className="primary-button" disabled={pending} type="submit">
+        {pending ? "Please wait" : isRegistering ? "Create account" : "Sign in"}
+      </button>
+      {onModeChange === undefined ? null : (
+        <button
+          className="text-button"
+          disabled={pending}
+          onClick={() => {
+            setSuccessMessage(null);
+            onModeChange(isRegistering ? "login" : "register");
+          }}
+          type="button"
+        >
+          {isRegistering
+            ? "Already have an account? Sign in"
+            : "Need an account? Register"}
+        </button>
+      )}
+    </form>
+  );
+}
