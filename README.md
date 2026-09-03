@@ -49,11 +49,10 @@ Cypress needs the backend, database, and frontend running. Use `npm run test:e2e
 ## Trade-offs and known limitations
 
 - The frontend depends on a separately running backend.
-- API state is intentionally lightweight; there is no dedicated query cache or optimistic update layer.
+- There is no dedicated query cache or optimistic update layer.
 - Cypress creates test data but cannot remove users because the API has no user-delete endpoint.
-- Accessibility coverage is focused on the implemented flows rather than a complete automated audit.
 - There is no production deployment configuration, analytics, error monitoring, or visual regression suite.
-- The UI exposes practical inventory and invoice workflows, but not a full reporting or administration console.
+- Overview page still empty, no data showed.
 
 ## What I would do with one more week
 
@@ -62,6 +61,7 @@ Cypress needs the backend, database, and frontend running. Use `npm run test:e2e
 - Add query caching, better loading/error recovery, and more granular mutation feedback.
 - Add visual regression tests and broaden Cypress coverage across roles and edge cases.
 - Add deployment configuration, runtime configuration validation, and production monitoring.
+- Add screen to explain stock movement log (currently there's no page or component that present stock movement data)
 
 ## AI Usage
 

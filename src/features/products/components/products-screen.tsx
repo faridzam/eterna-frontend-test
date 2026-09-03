@@ -2,18 +2,18 @@
 
 import { ApiError } from "@/src/lib/api-client";
 import {
-    useCallback,
-    useEffect,
-    useRef,
-    useState,
-    type FormEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
 } from "react";
 import { z } from "zod";
 import { useOptionalAuth } from "../../auth/components/auth-provider";
 import {
-    productsApi,
-    type Product,
-    type ProductInput,
+  productsApi,
+  type Product,
+  type ProductInput,
 } from "../services/products.api";
 
 const pageSize = 10;
@@ -439,9 +439,6 @@ export function ProductsScreen() {
             type="search"
             value={searchInput}
           />
-          <button className="secondary-button" type="submit">
-            Search
-          </button>
         </div>
       </form>
       {notice === null ? null : (

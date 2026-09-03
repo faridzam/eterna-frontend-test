@@ -101,7 +101,7 @@ function InvoiceForm({
   editing: Invoice | null;
   products: readonly Product[];
   onCancel: () => void;
-  onSaved: (message: string) => Promise<void>;
+  onSaved: (message: string, invoice: Invoice) => Promise<void>;
 }>) {
   const [values, setValues] = useState<FormValues>(() =>
     editing === null
@@ -207,7 +207,7 @@ function InvoiceForm({
         editing === null
           ? await invoicesApi.create(payload)
           : await invoicesApi.updateDraft(editing.id, payload, editing.version);
-      await onSaved(result.message);
+      await onSaved(result.message, result.invoice);
     } catch (error: unknown) {
       setRequestError(messageFrom(error));
     } finally {
@@ -748,9 +748,10 @@ export function InvoicesScreen() {
   function refresh(): void {
     setRefreshToken((current) => current + 1);
   }
-  async function saved(message: string): Promise<void> {
+  async function saved(message: string, invoice: Invoice): Promise<void> {
     setFormOpen(false);
     setNotice(message);
+    if (editing !== null) setSelected(invoice);
     refresh();
     (editing === null ? createRef.current : detailTriggerRef.current)?.focus();
     setEditing(null);

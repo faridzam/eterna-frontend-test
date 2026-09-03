@@ -175,6 +175,54 @@ describe("InvoicesScreen", () => {
     expect(screen.getAllByText("$3.89").length).toBeGreaterThan(0);
   });
 
+  it("updates the open detail modal with the saved draft", async () => {
+    const user = userEvent.setup();
+    const updatedInvoice = {
+      ...invoice,
+      customerName: "Updated Acme",
+      subtotalCents: 700,
+      taxAmountCents: 77,
+      totalCents: 777,
+      version: 2,
+      updatedAt: "2026-09-03T01:00:00.000Z",
+      items: [
+        {
+          ...invoice.items[0],
+          quantity: 2,
+          lineTotalCents: 700,
+        },
+      ],
+    };
+    mocks.updateDraft.mockResolvedValueOnce({
+      message: "Invoice updated successfully.",
+      invoice: updatedInvoice,
+    });
+
+    render(<InvoicesScreen />);
+    await user.click(await screen.findByRole("button", { name: /INV-2026-0001/ }));
+    await user.click(await screen.findByRole("button", { name: "Edit" }));
+    const form = screen.getByRole("dialog", { name: "Edit invoice" });
+    await user.clear(within(form).getByLabelText("Customer name"));
+    await user.type(within(form).getByLabelText("Customer name"), "Updated Acme");
+    await user.clear(within(form).getByLabelText("Quantity"));
+    await user.type(within(form).getByLabelText("Quantity"), "2");
+    await user.click(within(form).getByRole("button", { name: "Save draft" }));
+
+    await waitFor(() =>
+      expect(mocks.updateDraft).toHaveBeenCalledWith(
+        invoice.id,
+        expect.objectContaining({ customerName: "Updated Acme" }),
+        invoice.version,
+      ),
+    );
+    const detail = await screen.findByRole("dialog", {
+      name: "INV-2026-0001",
+    });
+    expect(within(detail).getByText("Updated Acme")).toBeVisible();
+    expect(within(detail).getByText("$7.77")).toBeVisible();
+    expect(within(detail).getByText(/Qty 2/)).toBeVisible();
+  });
+
   it("uses the returned invoice version for the next status action", async () => {
     const user = userEvent.setup();
     const issuedInvoice = { ...invoice, status: "ISSUED" as const, version: 2 };
